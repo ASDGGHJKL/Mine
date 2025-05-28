@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mines Game</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      color: #00ffcc;
+      font-family: 'Courier New', monospace;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+      user-select: none;
+    }
+    h1 {
+      color: #ff0055;
+      margin-bottom: 10px;
+    }
+    #homeScreen {
+      background: #111;
+      padding: 50px 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 40px #00ffcc;
+      display: block;
+    }
+    #homeScreen img {
+      max-width: 300px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px #00ffcc;
+      margin: 20px auto;
+      display: block;
+    }
+    #gameScreen {
+      background: #111 url('game-bg.jpg') no-repeat center center;
+      background-size: cover;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 40px #00ffcc;
+      display: none;
+      position: relative;
+      overflow: hidden;
+    }
+    #gameScreen::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6); /* Overlay */
+      z-index: 0;
+      border-radius: 12px;
+    }
+    #gameScreen > * {
+      position: relative;
+      z-index: 1;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(5, 64px);
+      grid-gap: 8px;
+      justify-content: center;
+      margin: 20px auto;
+      user-select: none;
+    }
+    .cell {
+      width: 64px;
+      height: 64px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      box-shadow: 0 0 6px #222;
+      color: #00ffcc;
+      font-size: 24px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.2s;
+      position: relative;
+    }
+    .cell:hover {
+      box-shadow: 0 0 12px #00ffcc;
+    }
+    .cell.revealed {
+      background: #222;
+      box-shadow: inset 0 0 6px #00ffcc;
+      cursor: default;
+    }
+    .cell.mine {
+      background: #ff0033;
+      box-shadow: 0 0 12px red;
+      cursor: default;
+    }
+    .cell img.diamond {
+      width: 36px;
+      height: 36px;
+      pointer-events: none;
+      user-select: none;
+    }
+    #controls {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #controls input[type="number"] {
+      width: 80px;
+      margin-right: 12px;
+      background: #111;
+      border: none;
+      border-radius: 8px;
+      color: #00ffcc;
+      padding: 10px;
+      font-size: 16px;
+      box-shadow: 0 0 6px #00ffcc;
+    }
+    #controls button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.3s ease;
+    }
+    #placeBetBtn {
+      background: #cc0000;
+      color: #fff;
+      box-shadow: 0 0 8px #cc0000;
+    }
+    #placeBetBtn:hover:enabled {
+      background: #ff3333;
+    }
+    #placeBetBtn:disabled {
+      background: #660000;
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.6;
+    }
+    #cashOutBtn {
+      background: #00cc33;
+      color: #fff;
+      box-shadow: 0 0 8px #00cc33;
+    }
+    #cashOutBtn:hover:enabled {
+      background: #33ff66;
+    }
+    #cashOutBtn:disabled {
+      background: #006600;
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.6;
+    }
+    #muteButton {
+      background: #111;
+      color: #00ffcc;
+      box-shadow: 0 0 6px #00ffcc;
+    }
+    #muteButton:hover {
+      background: #00ffcc;
+      color: #111;
+    }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #fff;
+      min-height: 24px;
+    }
+    #multiplier {
+      font-size: 24px;
+      margin-top: 12px;
+      color: #00ffff;
+      min-height: 30px;
+    }
+    #balance {
+      color: #0f0;
+      margin-bottom: 8px;
+      min-width: 120px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Home Screen -->
+<div id="homeScreen">
+  <h1>Welcome to Mines Game</h1>
+  <img src="home-bg-image.png" alt="Home Screen Image" />
+  <button onclick="startApp()">Play</button>
+</div>
+
+<!-- Game Screen -->
+<div id="gameScreen">
+  <h1>Mines Game</h1>
+  <div id="grid"></div>
+
+  <div id="controls">
+    <div id="balance">Balance: 1000</div>
+    <label for="betAmount">Bet:</label>
+    <input type="number" id="betAmount" value="100" min="1" />
+    <label>Mines:</label>
+    <button onclick="changeMines(-1)">-</button>
+    <span id="mineCountDisplay">5</span>
+    <button onclick="changeMines(1)">+</button>
+
+    <button id="placeBetBtn" onclick="startGame()">Place Bet</button>
+    <button id="cashOutBtn" onclick="cashOut()" disabled>Cash Out</button>
+    <button onclick="toggleMute()" id="muteButton">Mute</button>
+  </div>
+
+  <div id="multiplier">Multiplier: x1.00</div>
+  <div id="status">Choose bet and number of mines to start.</div>
+</div>
+
+<!-- Audio -->
+<audio id="sound-safe" src="safe.mp3"></audio>
+<audio id="sound-mine" src="mine.mp3"></audio>
+<audio id="sound-cashout" src="cashout.mp3"></audio>
+<audio id="bg-music" src="bg.mp3" loop></audio>
+
+<script>
+  const gridSize = 5;
+  let mineCount = 5;
+  let mines = [];
+  let revealed = 0;
+  let gameOver = true;
+  let bet = 100;
+  let currentMultiplier = 1;
+  let balance = parseInt(localStorage.getItem("mines_balance")) || 1000;
+
+  const grid = document.getElementById("grid");
+  const multiplierDisplay = document.getElementById("multiplier");
+  const balanceDisplay = document.getElementById("balance");
+  const statusDisplay = document.getElementById("status");
+  const placeBetBtn = document.getElementById("placeBetBtn");
+  const cashOutBtn = document.getElementById("cashOutBtn");
+  const betAmountInput = document.getElementById("betAmount");
+  const mineCountDisplay = document.getElementById("mineCountDisplay");
+
+  const soundSafe = document.getElementById("sound-safe");
+  const soundMine = document.getElementById("sound-mine");
+  const soundCashout = document.getElementById("sound-cashout");
+  const bgMusic = document.getElementById("bg-music");
+
+  let isMuted = false;
+
+  function toggleMute() {
+    isMuted = !isMuted;
+    [soundSafe, soundMine, soundCashout, bgMusic].forEach(s => s.muted = isMuted);
+    document.getElementById("muteButton").textContent = isMuted ? "Unmute" : "Mute";
+  }
+
+  function saveBalance() {
+    localStorage.setItem("mines_balance", balance);
+  }
+
+  function updateBalanceDisplay() {
+    balanceDisplay.textContent = `Balance: ${balance}`;
+    saveBalance();
+  }
+
+  function changeMines(delta) {
+    if (!gameOver) return;
+    let newCount = mineCount + delta;
+    if (newCount >= 3 && newCount <= 24) {
+      mineCount = newCount;
+      mineCountDisplay.textContent = mineCount;
+    }
+  }
+
+  function startApp() {
+    document.getElementById("homeScreen").style.display = "none";
+    document.getElementById("gameScreen").style.display = "block";
+    updateBalanceDisplay();
+    createGrid();
+    resetGame();
+  }
+
+  function createGrid() {
+    grid.innerHTML = "";
+    for (let i = 0; i < gridSize * gridSize; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.index = i;
+      cell.onclick = () => clickCell(cell, i);
+      grid.appendChild(cell);
+    }
+  }
+
+  function resetGame() {
+    gameOver = true;
+    revealed = 0;
+    currentMultiplier = 1;
+    multiplierDisplay.textContent = `Multiplier: x1.00`;
+    statusDisplay.textContent = "Choose bet and number of mines to start.";
+    placeBetBtn.disabled = false;
+    cashOutBtn.disabled = true;
+
+    Array.from(grid.children).forEach(cell => {
+      cell.className = "cell";
+      cell.innerHTML = "";
+      cell.style.pointerEvents = "none";
+    });
+  }
+
+  function startGame() {
+    bet = parseInt(betAmountInput.value);
+    if (isNaN(bet) || bet <= 0) {
+      alert("Enter a valid bet amount.");
+      return;
+    }
+    if (bet > balance) {
+      alert("You don't have enough balance.");
+      return;
+    }
+    balance -= bet;
+    updateBalanceDisplay();
+
+    gameOver = false;
+    mines = generateMines();
+    revealed = 0;
+    currentMultiplier = 1;
+    multiplierDisplay.textContent = `Multiplier: x1.00`;
+    statusDisplay.textContent = "Game started. Click tiles!";
+    placeBetBtn.disabled = true;
+    cashOutBtn.disabled = false;
+
+    Array.from(grid.children).forEach(cell => {
+      cell.className = "cell";
+      cell.innerHTML = "";
+      cell.style.pointerEvents = "auto";
+    });
+
+    if (!isMuted) bgMusic.play();
+  }
+
+  function generateMines() {
+    const mineSet = new Set();
+    while (mineSet.size < mineCount) {
+      mineSet.add(Math.floor(Math.random() * gridSize * gridSize));
+    }
+    return Array.from(mineSet);
+  }
+
+  function clickCell(cell, index) {
+    if (gameOver || cell.classList.contains("revealed")) return;
+
+    if (mines.includes(index)) {
+      revealMine(cell);
+      endGame(false);
+    } else {
+      revealSafe(cell);
+      revealed++;
+      updateMultiplier();
+      if (revealed === (gridSize * gridSize - mineCount)) {
+        endGame(true);
+      }
+    }
+  }
+
+  function revealMine(cell) {
+    cell.classList.add("revealed", "mine");
+    cell.innerHTML = "💣";
+    if (!isMuted) soundMine.play();
+  }
+
+  function revealSafe(cell) {
+    cell.classList.add("revealed");
+    cell.innerHTML = '<img src="diamond.png" alt="Safe" class="diamond" />';
+    if (!isMuted) soundSafe.play();
+  }
+
+  function updateMultiplier() {
+    currentMultiplier = (1 + revealed * 0.25) * (1 + (mineCount / 20));
+    multiplierDisplay.textContent = `Multiplier: x${currentMultiplier.toFixed(2)}`;
+  }
+
+  function cashOut() {
+    if (gameOver) return;
+
+    let winAmount = Math.floor(bet * currentMultiplier);
+    balance += winAmount;
+    updateBalanceDisplay();
+
+    statusDisplay.textContent = `You cashed out and won ${winAmount}!`;
+    cashOutBtn.disabled = true;
+    placeBetBtn.disabled = false;
+    gameOver = true;
+
+    revealAllTiles();
+
+    if (!isMuted) soundCashout.play();
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+  }
+
+  function revealAllTiles() {
+    Array.from(grid.children).forEach((cell, index) => {
+      if (!cell.classList.contains("revealed")) {
+        if (mines.includes(index)) {
+          revealMine(cell);
+        } else {
+          revealSafe(cell);
+        }
+      }
+      cell.style.pointerEvents = "none";
+    });
+  }
+
+  function endGame(won) {
+    gameOver = true;
+    cashOutBtn.disabled = true;
+    placeBetBtn.disabled = false;
+    statusDisplay.textContent = won ? "You won! You revealed all safe tiles." : "You hit a mine! Game over.";
+    revealAllTiles();
+    if (!isMuted) bgMusic.pause();
+  }
+
+  mineCountDisplay.textContent = mineCount;
+  updateBalanceDisplay();
+</script>
+
+</body>
+</html>
